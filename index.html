@@ -26,6 +26,16 @@
       body {
         margin: 0;
         background: var(--page);
+        display: grid;
+        place-items: center;
+      }
+
+      .face {
+        font-family:
+          'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+        font-size: clamp(4rem, 18vmin, 9rem);
+        line-height: 1;
+        user-select: none;
       }
 
       .mark {
@@ -39,15 +49,29 @@
         margin: -0.5rem;
       }
 
+      /* Grey until you reach for it, so the page stays empty until it is wanted. */
       .mark svg {
         display: block;
         width: 30px;
         height: 30px;
+        filter: grayscale(1);
+        transition: filter 150ms ease;
+      }
+
+      .mark:hover svg,
+      .mark:focus-visible svg {
+        filter: none;
       }
 
       .mark:focus-visible {
         outline: 2px solid var(--focus);
         outline-offset: 2px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .mark svg {
+          transition-duration: 0.01ms;
+        }
       }
 
       .square {
@@ -60,6 +84,8 @@
     </style>
   </head>
   <body>
+    <span class="face" role="img" aria-label="face with sunglasses">😎</span>
+
     <a class="mark" href="https://feedmypixel.com" aria-label="feedmypixel portfolio">
       <svg viewBox="0 0 30 30" aria-hidden="true" focusable="false">
         <rect class="square" width="30" height="30" rx="2" />
