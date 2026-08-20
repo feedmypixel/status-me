@@ -36,8 +36,25 @@ in the DNS records. **Deleting those records is the step that actually removes t
   ```
 - **Add** a `CNAME` on `www` → `feedmypixel.github.io`
 
-Leave every `TXT` record alone. SPF, DKIM and DMARC live there and the mail setup depends on them —
-changing the `A` records does not affect mail, so the two can proceed in parallel.
+### The `TXT` records are the previous owner's, not ours
+
+Worth knowing before the mail setup, because the usual advice — *leave `TXT` alone* — is wrong here.
+The domain arrived carrying:
+
+```
+"v=spf1 include:secureserver.net -all"
+"NETORGFT9519691.onmicrosoft.com"
+```
+
+The second is a Microsoft 365 domain-verification token belonging to whoever held the domain before.
+It does nothing for us and can go.
+
+The first matters more. `-all` is a hard fail: it tells receiving servers that **only**
+secureserver.net may send as `status.me`, so the moment mail goes out through Resend it fails SPF and
+lands in spam. It has to be replaced with Resend's record — not merged, not left in place. Two SPF
+records on one domain is itself a misconfiguration.
+
+Neither affects this holding page, so the `A` records can be swapped now and the mail work can follow.
 
 ## When the real app is ready
 
