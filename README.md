@@ -1,66 +1,50 @@
 # status.me — holding page
 
 A white page with the feedmypixel mark bottom-right, linking to
-[feedmypixel.com](https://feedmypixel.com). It exists to get `status.me` off the previous owner's
-parking page while the real thing is built.
+[feedmypixel.com](https://feedmypixel.com). It exists to hold the domain while the real thing is
+built.
 
-Two files, no build step, no dependencies. `CNAME` is what tells GitHub Pages the custom domain —
-Pages rewrites it if you change the domain in the UI, so edit it there rather than here.
+Two files, no build step, no dependencies.
 
-## Deploying
+## Live
 
-GitHub Pages, because the account already uses it and swapping away later is one DNS change.
+GitHub Pages, served from `main` at the repo root. `CNAME` carries the custom domain — Pages
+rewrites that file when the domain changes in the UI, so change it there rather than here.
 
-1. Create a repo `feedmypixel/status-me` (public — Pages on a private repo needs a paid plan, and
-   there is nothing here worth hiding).
-2. Push this directory to it.
-3. **Settings → Pages** → Source: *Deploy from a branch* → `main` / `/ (root)`.
-4. **Settings → Pages → Custom domain** → `status.me` → Save.
-5. Once the DNS below has propagated, tick **Enforce HTTPS**. It stays greyed out until GitHub has
-   issued the certificate, which usually takes minutes but can take an hour.
+## DNS, as it stands
 
-## DNS at GoDaddy
+At GoDaddy. Nine records, and every one of them earns its place:
 
-The domain currently `301`s to `mybigdomainsale.com` — that redirect is the broker's, and it lives
-in the DNS records. **Deleting those records is the step that actually removes the old page.**
+| Type | Name | Data |
+| ---- | ---- | ---- |
+| A ×4 | `@` | `185.199.108.153` · `.109.153` · `.110.153` · `.111.153` — GitHub Pages |
+| CNAME | `www` | `feedmypixel.github.io` |
+| CNAME | `_domainconnect` | GoDaddy's setup helper |
+| NS ×2 | `@` | `ns69` / `ns70.domaincontrol.com` |
+| SOA | `@` | — |
 
-- **Delete** any existing `A` record on `@`, any `CNAME` on `www`, and any forwarding rule under
-  *Domain Settings → Forwarding*. GoDaddy's forwarding is separate from the DNS tab and is the usual
-  reason a parking page survives an A-record change.
-- **Add** four `A` records on `@`, pointing at GitHub Pages:
-  ```
-  185.199.108.153
-  185.199.109.153
-  185.199.110.153
-  185.199.111.153
-  ```
-- **Add** a `CNAME` on `www` → `feedmypixel.github.io`
+**There is deliberately no `MX` record.** Mail to `@status.me` bounces, which is correct until Resend
+is set up. The domain arrived pointing at the previous owner's Microsoft 365 tenant, so until that
+record was deleted, anything sent to `@status.me` was landing in a stranger's mailbox. Eighteen
+inherited records went with it — `secureserver.net` mail plumbing, Skype for Business `SRV` records,
+and an `auth` A record. Stale records pointing at services you do not control are how subdomain
+takeovers start.
 
-### The `TXT` records are the previous owner's, not ours
+Same reasoning applies to the two inherited `TXT` records, now gone: the SPF was
+`include:secureserver.net -all`, a hard fail naming someone else's mail servers as the only valid
+senders. Left in place, the first Resend message would have failed SPF and gone to spam.
 
-Worth knowing before the mail setup, because the usual advice — *leave `TXT` alone* — is wrong here.
-The domain arrived carrying:
+## Retiring this
 
-```
-"v=spf1 include:secureserver.net -all"
-"NETORGFT9519691.onmicrosoft.com"
+When the app is ready, `status.me` moves to Fly:
+
+```bash
+flyctl certs create status.me -a stat-ui   # prints the records it wants
 ```
 
-The second is a Microsoft 365 domain-verification token belonging to whoever held the domain before.
-It does nothing for us and can go.
+Then delete the four Pages `A` records. **Never run both at once** — two services claiming the apex
+means whichever answers first wins, intermittently, and it looks like a caching bug rather than a
+config one.
 
-The first matters more. `-all` is a hard fail: it tells receiving servers that **only**
-secureserver.net may send as `status.me`, so the moment mail goes out through Resend it fails SPF and
-lands in spam. It has to be replaced with Resend's record — not merged, not left in place. Two SPF
-records on one domain is itself a misconfiguration.
-
-Neither affects this holding page, so the `A` records can be swapped now and the mail work can follow.
-
-## When the real app is ready
-
-Point the apex at Fly instead (`flyctl certs create status.me -a stat-ui` prints the records it
-wants) and delete these four `A` records. Do not run both at once — two services claiming the apex
-means whichever answers first wins, intermittently.
-
-Archive or delete this repo at that point rather than leaving a second thing that thinks it owns the
-domain.
+Archive this repo at that point. A second thing that still believes it owns the domain is the
+problem, not the leftover HTML.
